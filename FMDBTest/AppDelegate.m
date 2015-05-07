@@ -10,6 +10,8 @@
 
 #import "ViewController.h"
 
+#import "FMDatabase.h"
+
 @implementation AppDelegate
 
 @synthesize window = _window;
@@ -29,6 +31,36 @@
     self.viewController = [[[ViewController alloc] initWithNibName:@"ViewController" bundle:nil] autorelease];
     self.window.rootViewController = self.viewController;
     [self.window makeKeyAndVisible];
+    
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *docsPath = [paths objectAtIndex:0];
+    NSString *path = [docsPath stringByAppendingPathComponent:@"database.sqlite"];
+    
+    FMDatabase *database = [FMDatabase databaseWithPath:path];    
+    
+    
+    [database open];
+    [database executeUpdate:@"create table user(name text primary key, age int)"];
+    
+    // Building the string ourself
+    NSString *query = [NSString stringWithFormat:@"insert into user values ('%@', %d)",@"brandontreb", 25];
+    [database executeUpdate:query];
+    
+    // Let fmdb do the work
+    [database executeUpdate:@"insert into user(name, age) values(?,?)",@"cruffenach",[NSNumber numberWithInt:25],nil];
+    
+    // Fetch all users
+    FMResultSet *results = [database executeQuery:@"select * from user"];
+    while([results next]) {
+        NSString *name = [results stringForColumn:@"name"];
+        NSInteger age  = [results intForColumn:@"age"];        
+        NSLog(@"User: %@ - %d",name, age);
+    }
+    
+    [database executeUpdate:@"delete from user where age = 25"];
+    
+    [database close];
+    
     return YES;
 }
 
